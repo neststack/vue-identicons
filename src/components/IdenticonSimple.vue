@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { sleep } from '@/utils/helpers'
+import CommonButton from '@/components/common/CommonButton.vue'
 
 const CANVAS_SIZE = 960
 const GUTTERS = 80
@@ -45,8 +46,12 @@ onMounted(() => {
 
 <template>
   <div class="identicon-container">
-    <button @click="draw">Draw</button>
-    <canvas id="tutorial" :width="canvasSize" :height="canvasSize"></canvas>
+    <div class="controls-container">
+      <CommonButton @click="draw">Draw</CommonButton>
+    </div>
+    <div class="canvas-container">
+      <canvas id="tutorial" :width="canvasSize" :height="canvasSize"></canvas>
+    </div>
   </div>
 </template>
 
@@ -55,7 +60,15 @@ onMounted(() => {
   height: 100%;
   width: 100%;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 2rem;
+  .controls-container {
+    
+  }
+  .canvas-container {
+
+  }
 }
 </style>

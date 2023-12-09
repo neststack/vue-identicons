@@ -1,9 +1,9 @@
 <script setup>
-import IdenticonComponent from '../components/IdenticonComponent.vue'
+import IdenticonSimple from '../components/IdenticonSimple.vue'
 </script>
 
 <template>
   <main>
-    <IdenticonComponent />
+    <IdenticonSimple />
   </main>
 </template>
