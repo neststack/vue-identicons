@@ -1,4 +1,6 @@
 <script setup>
+import { defineEmits, defineProps } from 'vue';
+
 defineEmits(['click'])
 
 defineProps({
@@ -8,7 +10,7 @@ defineProps({
 
 <template>
   <button
-    @click="emit('click')"
+    @click="$emit('click')"
   >
     <slot></slot>  
   </button>
