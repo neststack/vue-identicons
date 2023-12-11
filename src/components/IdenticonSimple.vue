@@ -81,6 +81,11 @@ function draw() {
   }
 }
 
+function handleCheckboxChange(i, j) {
+  matrixInput.value[i][j] = matrixInput.value[i][j] ? 0 : 1
+  draw()
+}
+
 onMounted(() => {
   draw()
 })
@@ -132,6 +137,16 @@ watch([fillColor, backgroundColor], () => {
           </template>
         </div>
       </div>
+      <div class="control-item" id="checkboxMatrix">
+        <h2 for="canvasSize">Pattern</h2>
+        <div class="checkbox-matrix-inputs">
+          <div v-for="(row, i) in matrixInput" :key="i" class="checkbox-matrix-input">
+            <div v-for="(item, j) in row" :key="j" class="checkbox-input-row">
+              <input type="checkbox" :checked="item" @change="handleCheckboxChange(i, j)" />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="canvas-container">
       <canvas id="identiconCanvas" :width="canvasSize" :height="canvasSize"></canvas>
@@ -141,6 +156,7 @@ watch([fillColor, backgroundColor], () => {
 
 <style lang="scss">
 .identicon-container {
+  --pattern-input-size: 2rem;
   height: 100%;
   width: 100%;
   display: flex;
@@ -181,6 +197,11 @@ watch([fillColor, backgroundColor], () => {
       &#backgroundColor {
         &::before {
           background-color: var(--selected-background-color);
+        }
+      }
+      &#checkboxMatrix {
+        &::before {
+          background-color: #8e8cd8;
         }
       }
       h2 {
@@ -228,6 +249,35 @@ watch([fillColor, backgroundColor], () => {
           text-transform: capitalize;
           text-align: center;
           transition: all ease-in-out 100ms;
+        }
+      }
+    }
+    .checkbox-matrix-inputs {
+      .checkbox-matrix-input {
+        display: flex;
+        flex-direction: row;
+        .checkbox-input-row {
+          display: flex;
+          flex-direction: column;
+          input[type="checkbox"] {
+            width: var(--pattern-input-size);
+            height: var(--pattern-input-size);
+            display: grid;
+            place-content: center;
+          }
+
+          input[type="checkbox"]::before {
+            content: "";
+            width: var(--pattern-input-size);
+            height: var(--pattern-input-size);
+            transition: 120ms transform ease-in-out;
+            background-color: var(--selected-background-color);
+          }
+
+          input[type="checkbox"]:checked::before {
+
+            background-color: var(--selected-fill-color);
+          }
         }
       }
     }
