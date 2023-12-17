@@ -25,8 +25,9 @@ const COLORS = [
   { name: 'Aqua-1', color: '#8cd8d2' },
   { name: 'Aqua-2', color: '#8cd8d7' },
   { name: 'Aqua-3', color: '#8cd8c3' },
-  { name: 'Forest-1', color: '#8cd8aa' },
-  { name: 'Forest-2', color: '#8cd8af' }
+  { name: 'Forest-1', color: '#8cd8c3' },
+  { name: 'Forest-2', color: '#8cd8aa' },
+  { name: 'Forest-3', color: '#8cd8af' },
 ]
 const BACKGROUND_COLORS = [
   { name: 'classic', color: '#f0f0f0' },
