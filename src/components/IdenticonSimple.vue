@@ -1,28 +1,32 @@
 <script setup>
 import { computed, ref, onMounted, watch } from 'vue'
-// import CommonButton from '@/components/common/CommonButton.vue'
+import CommonButton from '@/components/common/CommonButton.vue'
 
 const CANVAS_SIZE = 960
 const GUTTERS = 80
 const COLORS = [
-  { name: 'green1', color: '#acd88c' },
-  { name: 'green1', color: '#8cd890' },
-  { name: 'green1', color: '#8cd895' },
-  { name: 'green1', color: '#b68cd8' },
-  { name: 'green1', color: '#c08cd8' },
-  { name: 'green1', color: '#ca8cd8' },
-  { name: 'green1', color: '#d08cd8' },
-  { name: 'green1', color: '#d8a78c' },
-  { name: 'green1', color: '#998cd8' },
-  { name: 'green1', color: '#8e8cd8' },
-  { name: 'green1', color: '#8c99d8' },
-  { name: 'green1', color: '#8cbbd8' },
-  { name: 'green1', color: '#8cbfd8' },
-  { name: 'green1', color: '#8cc6d8' },
-  { name: 'green1', color: '#8cd8aa' },
-  { name: 'green1', color: '#8cd8af' },
-  { name: 'green1', color: '#8cd8c3' },
-  { name: 'green1', color: '#8cd8d7' }
+  { name: 'Green-1', color: '#acd88c' },
+  { name: 'Green-2', color: '#8cd890' },
+  { name: 'Green-3', color: '#8cd895' },
+  { name: 'Orange-1', color: '#d8a78c' },
+  { name: 'Purple-1', color: '#b68cd8' },
+  { name: 'Pink-1', color: '#c08cd8' },
+  { name: 'Pink-2', color: '#ca8cd8' },
+  { name: 'Pink-3', color: '#d08cd8' },
+  { name: 'Dark-1', color: '#998cd8' },
+  { name: 'Dark-2', color: '#8e8cd8' },
+  { name: 'Dark-3', color: '#8c99d8' },
+  { name: 'Sky-1', color: '#8cbbd8' },
+  { name: 'Sky-2', color: '#8cbfd8' },
+  { name: 'Sky-3', color: '#8cbcd8' },
+  { name: 'Sky-4', color: '#8cc4d8' },
+  { name: 'Sky-5', color: '#8cc6d8' },
+  { name: 'Sky-6', color: '#8ccbd8' },
+  { name: 'Aqua-1', color: '#8cd8d2' },
+  { name: 'Aqua-2', color: '#8cd8d7' },
+  { name: 'Aqua-3', color: '#8cd8c3' },
+  { name: 'Forest-1', color: '#8cd8aa' },
+  { name: 'Forest-2', color: '#8cd8af' }
 ]
 const BACKGROUND_COLORS = [
   { name: 'classic', color: '#f0f0f0' },
@@ -45,6 +49,9 @@ const canvasSize = ref(CANVAS_SIZE)
 const canvasGutters = ref(GUTTERS)
 const backgroundColor = ref('#ffffff')
 const fillColor = ref('#8cbfd8')
+const inputMode = ref('pattern')
+const inputString = ref('Hello World!')
+const rotateHash = ref(0)
 
 // Computed
 const controlsStyle = computed(() => {
@@ -86,12 +93,47 @@ function handleCheckboxChange(i, j) {
   draw()
 }
 
+function resetCanvasSize() {
+  canvasSize.value = CANVAS_SIZE
+  canvasGutters.value = GUTTERS
+}
+
+function generateHash() {
+  async function sha256(message) {
+    // Convert the string to Uint8Array
+    const encoder = new TextEncoder()
+    const data = encoder.encode(message)
+
+    // Hash the data using SHA-256
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+
+    // Convert the hash to a hexadecimal string
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const hashHex = hashArray.map((byte) => byte.toString(2).padStart(2, '0')).join('')
+    console.log(hashHex?.length)
+    return hashHex
+  }
+
+  // Example usage:
+  const inputString = 'Hello, World!'
+  sha256(inputString)
+    .then((hash) => {
+      console.log(hash)
+
+    })
+    .catch((error) => console.error(error))
+}
+
+function activateMode(mode) {
+  inputMode.value = mode
+}
+
 onMounted(() => {
   draw()
 })
 
 // Watch multiple values and trigger the same action
-watch([fillColor, backgroundColor], () => {
+watch([fillColor, backgroundColor, canvasSize, canvasGutters], () => {
   draw()
 })
 </script>
@@ -100,7 +142,7 @@ watch([fillColor, backgroundColor], () => {
   <div class="identicon-container" :style="controlsStyle">
     <div class="controls-container">
       <div class="control-item" id="fillColor">
-        <h2 for="canvasSize">Fill Color</h2>
+        <h2>Fill Color</h2>
         <div class="color-radio-boxes">
           <template v-for="item in COLORS" :key="item.color">
             <input
@@ -119,7 +161,7 @@ watch([fillColor, backgroundColor], () => {
         </div>
       </div>
       <div class="control-item" id="backgroundColor">
-        <h2 for="canvasSize">Background Color</h2>
+        <h2>Background Color</h2>
         <div class="color-radio-boxes">
           <template v-for="item in BACKGROUND_COLORS" :key="item.color">
             <input
@@ -137,17 +179,77 @@ watch([fillColor, backgroundColor], () => {
           </template>
         </div>
       </div>
+      <div class="control-item" id="sizeInputs">
+        <h2>Canvas Size</h2>
+        <div class="size-inputs">
+          <label for="canvasSize">Enter a Canvas size:</label>
+          <input
+            type="number"
+            id="canvasSize"
+            name="canvasSize"
+            min="1"
+            max="100"
+            step="1"
+            v-model="canvasSize"
+          />
+          <label for="canvasGutters">{{ `Enter a gutter size (1 - ${canvasSize}):` }}</label>
+          <input
+            type="number"
+            id="canvasGutters"
+            name="canvasGutters"
+            min="1"
+            max="100"
+            step="1"
+            v-model="canvasGutters"
+          />
+        </div>
+        <CommonButton @click="resetCanvasSize" :backgroundColor="fillColor" :color="backgroundColor"
+          >Reset</CommonButton
+        >
+      </div>
       <div class="control-item" id="checkboxMatrix">
-        <h2 for="canvasSize">Pattern</h2>
-        <div class="checkbox-matrix-inputs">
-          <div v-for="(row, i) in matrixInput" :key="i" class="checkbox-matrix-input">
-            <div v-for="(item, j) in row" :key="j" class="checkbox-input-row">
-              <input type="checkbox" :checked="item" @change="handleCheckboxChange(i, j)" />
+        <h2 class="pattern-method-header">
+          <span @click="activateMode('pattern')" :class="{ active: inputMode === 'pattern' }"
+            >Pattern</span
+          >
+          <span @click="activateMode('string')" :class="{ active: inputMode === 'string' }"
+            >Input String</span
+          >
+        </h2>
+        <Transition v-if="inputMode === 'pattern'" appear name="fade">
+          <div class="checkbox-matrix-inputs">
+            <div v-for="(row, i) in matrixInput" :key="i" class="checkbox-matrix-input">
+              <div v-for="(item, j) in row" :key="j" class="checkbox-input-row">
+                <input type="checkbox" :checked="item" @change="handleCheckboxChange(i, j)" />
+              </div>
             </div>
           </div>
-        </div>
+        </Transition>
+        <Transition v-if="inputMode === 'string'" appear name="fade">
+          <div class="size-inputs">
+            <label for="inputString">Input String:</label>
+            <input
+              type="string"
+              id="inputString"
+              name="inputString"
+              v-model="inputString"
+            />
+            <label for="rotateHash">{{ `Rotate hex (1 - ${canvasSize}):` }}</label>
+            <input
+              type="number"
+              id="rotateHash"
+              name="rotateHash"
+              min="1"
+              max="100"
+              step="1"
+              v-model="rotateHash"
+            />
+          </div>
+        </Transition>
       </div>
     </div>
+
+    <CommonButton @click="generateHash">Generate</CommonButton>
     <div class="canvas-container">
       <canvas id="identiconCanvas" :width="canvasSize" :height="canvasSize"></canvas>
     </div>
@@ -164,6 +266,8 @@ watch([fillColor, backgroundColor], () => {
   justify-content: center;
   align-items: center;
   gap: 2rem;
+  transition: all ease-in-out 100ms;
+  user-select: none;
   .controls-container {
     height: 100%;
     width: 100%;
@@ -173,7 +277,7 @@ watch([fillColor, backgroundColor], () => {
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-start;
-    align-items: center;
+    align-items: stretch;
     gap: 1.5rem;
     .control-item {
       padding: 0 0 0 2rem;
@@ -188,6 +292,7 @@ watch([fillColor, backgroundColor], () => {
         height: 90%;
         left: 0;
         top: 5%;
+        border-radius: 4px;
       }
       &#fillColor {
         &::before {
@@ -204,9 +309,32 @@ watch([fillColor, backgroundColor], () => {
           background-color: #8e8cd8;
         }
       }
+      &#sizeInputs {
+        &::before {
+          background-color: #8cd8d7;
+        }
+      }
       h2 {
         font-size: 1.5rem;
         color: #ffffff;
+        padding: 0;
+        margin: 0;
+      }
+      .pattern-method-header {
+        display: flex;
+        span {
+          cursor: pointer;
+          color: #666666;
+          &.active {
+            color: #ffffff;
+          }
+          &:first-child {
+            padding-right: 0.5rem;
+          }
+          &:nth-child(2) {
+            padding-left: 0.5rem;
+          }
+        }
       }
     }
     .color-radio-boxes {
@@ -259,27 +387,31 @@ watch([fillColor, backgroundColor], () => {
         .checkbox-input-row {
           display: flex;
           flex-direction: column;
-          input[type="checkbox"] {
+          input[type='checkbox'] {
             width: var(--pattern-input-size);
             height: var(--pattern-input-size);
             display: grid;
             place-content: center;
           }
 
-          input[type="checkbox"]::before {
-            content: "";
+          input[type='checkbox']::before {
+            content: '';
             width: var(--pattern-input-size);
             height: var(--pattern-input-size);
             transition: 120ms transform ease-in-out;
             background-color: var(--selected-background-color);
           }
 
-          input[type="checkbox"]:checked::before {
-
+          input[type='checkbox']:checked::before {
             background-color: var(--selected-fill-color);
           }
         }
       }
+    }
+    .size-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
     }
   }
   .canvas-container {
