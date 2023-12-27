@@ -4,6 +4,8 @@ import CommonButton from '@/components/common/CommonButton.vue'
 
 const CANVAS_SIZE = 960
 const GUTTERS = 80
+const INPUT_STRING = 'Hello World!'
+const ROTATE_HASH = 0
 const COLORS = [
   { name: 'Green-1', color: '#acd88c' },
   { name: 'Green-2', color: '#8cd890' },
@@ -24,13 +26,13 @@ const COLORS = [
   { name: 'Sky-6', color: '#8ccbd8' },
   { name: 'Aqua-1', color: '#8cd8d2' },
   { name: 'Aqua-2', color: '#8cd8d7' },
-  { name: 'Aqua-3', color: '#8cd8c3' },
   { name: 'Forest-1', color: '#8cd8c3' },
   { name: 'Forest-2', color: '#8cd8aa' },
   { name: 'Forest-3', color: '#8cd8af' },
 ]
 const BACKGROUND_COLORS = [
-  { name: 'classic', color: '#f0f0f0' },
+  { name: 'github', color: '#f0f0f0' },
+  { name: 'slack', color: '#f2f8f7' },
   { name: 'white', color: '#ffffff' }
 ]
 
@@ -50,8 +52,9 @@ const canvasSize = ref(CANVAS_SIZE)
 const canvasGutters = ref(GUTTERS)
 const backgroundColor = ref('#ffffff')
 const fillColor = ref('#8cbfd8')
-const inputMode = ref('pattern')
+const inputMode = ref('string')
 const inputString = ref('Hello World!')
+const hashString = ref(null)
 const rotateHash = ref(0)
 
 // Computed
@@ -81,7 +84,6 @@ function draw() {
       if (matrix.value[i][j] === 1) {
         const x = j * boxWidth + gutter
         const y = i * boxWidth + gutter
-        console.log({ i, j, x, y, gutter, boxWidth })
         ctx.fillStyle = fillColor.value
         ctx.fillRect(x, y, boxWidth, boxWidth)
       }
@@ -91,7 +93,6 @@ function draw() {
 
 function handleCheckboxChange(i, j) {
   matrixInput.value[i][j] = matrixInput.value[i][j] ? 0 : 1
-  draw()
 }
 
 function resetCanvasSize() {
@@ -99,7 +100,25 @@ function resetCanvasSize() {
   canvasGutters.value = GUTTERS
 }
 
-function generateHash() {
+function resetInputStrings() {
+  inputString.value = INPUT_STRING
+  rotateHash.value = ROTATE_HASH
+}
+
+function rotateString(inputString, positions) {
+  // Ensure positions is a positive integer
+  positions = positions % inputString?.length
+  if (positions < 0) {
+    positions += inputString.length
+  }
+
+  // Rotate the string using substring concatenation
+  const rotatedString = inputString.substring(positions) + inputString.substring(0, positions)
+
+  return rotatedString
+}
+
+async function generateHash() {
   async function sha256(message) {
     // Convert the string to Uint8Array
     const encoder = new TextEncoder()
@@ -111,18 +130,47 @@ function generateHash() {
     // Convert the hash to a hexadecimal string
     const hashArray = Array.from(new Uint8Array(hashBuffer))
     const hashHex = hashArray.map((byte) => byte.toString(2).padStart(2, '0')).join('')
-    console.log(hashHex?.length)
+
     return hashHex
   }
 
   // Example usage:
-  const inputString = 'Hello, World!'
-  sha256(inputString)
-    .then((hash) => {
-      console.log(hash)
+  try {
+    const hash = await sha256(inputString.value)
+    return hash
+  } catch (error) {
+    console.error(error)
+  }
+}
 
-    })
-    .catch((error) => console.error(error))
+function binaryStringTo3x5Array(binaryString) {
+  console.log('binaryStringTo3x5Array',{binaryString})
+  if (binaryString?.length !== 15) {
+    binaryString = binaryString.slice(0,15)
+    // throw new Error('Binary string must be of length 15 (3 rows * 5 columns)');
+    console.log('binaryString length', binaryString?.length)
+  }
+
+  // Initialize a 3x5 array
+  const array3x5 = [];
+
+  // Loop through the binary string and split it into rows
+  for (let i = 0; i < 3; i++) {
+    // Extract a substring for each row (5 characters)
+    const rowString = binaryString.substring(i * 5, (i + 1) * 5);
+
+    // Convert the row string to an array of integers
+    const rowArray = rowString.split('').map(Number);
+
+    // Push the row array to the 3x5 array
+    array3x5.push(rowArray);
+  }
+
+  return array3x5;
+}
+
+function transpose2DArray(array2D) {
+  return array2D[0].map((_, colIndex) => array2D.map(row => row[colIndex]));
 }
 
 function activateMode(mode) {
@@ -134,9 +182,29 @@ onMounted(() => {
 })
 
 // Watch multiple values and trigger the same action
-watch([fillColor, backgroundColor, canvasSize, canvasGutters], () => {
-  draw()
-})
+watch(
+  [fillColor, backgroundColor, canvasSize, canvasGutters, matrixInput],
+  () => {
+    draw()
+  },
+  { deep: true }
+)
+
+// Watch multiple values and trigger the same action
+watch(
+  [inputString, rotateHash],
+  async () => {
+    let binaryHash = await generateHash()
+    console.log('Generated***', binaryHash)
+    binaryHash = rotateString(binaryHash, rotateHash.value)
+    console.log('Rotated***', binaryHash)
+    hashString.value = binaryHash
+    const array = binaryStringTo3x5Array(binaryHash)
+    console.log('Array***',{array})
+    matrixInput.value = transpose2DArray(array)
+  },
+  { deep: true }
+)
 </script>
 
 <template>
@@ -188,8 +256,8 @@ watch([fillColor, backgroundColor, canvasSize, canvasGutters], () => {
             type="number"
             id="canvasSize"
             name="canvasSize"
-            min="1"
-            max="100"
+            min="10"
+            max="1000"
             step="1"
             v-model="canvasSize"
           />
@@ -210,11 +278,11 @@ watch([fillColor, backgroundColor, canvasSize, canvasGutters], () => {
       </div>
       <div class="control-item" id="checkboxMatrix">
         <h2 class="pattern-method-header">
-          <span @click="activateMode('pattern')" :class="{ active: inputMode === 'pattern' }"
-            >Pattern</span
-          >
           <span @click="activateMode('string')" :class="{ active: inputMode === 'string' }"
             >Input String</span
+          >
+          <span @click="activateMode('pattern')" :class="{ active: inputMode === 'pattern' }"
+            >Pattern</span
           >
         </h2>
         <Transition v-if="inputMode === 'pattern'" appear name="fade">
@@ -229,28 +297,24 @@ watch([fillColor, backgroundColor, canvasSize, canvasGutters], () => {
         <Transition v-if="inputMode === 'string'" appear name="fade">
           <div class="size-inputs">
             <label for="inputString">Input String:</label>
-            <input
-              type="string"
-              id="inputString"
-              name="inputString"
-              v-model="inputString"
-            />
-            <label for="rotateHash">{{ `Rotate hex (1 - ${canvasSize}):` }}</label>
+            <input type="string" id="inputString" name="inputString" v-model="inputString" />
+            <label for="rotateHash">{{ `Rotate hexBinary (enter number):` }}</label>
             <input
               type="number"
               id="rotateHash"
               name="rotateHash"
-              min="1"
+              min="0"
               max="100"
               step="1"
               v-model="rotateHash"
             />
           </div>
         </Transition>
+        <CommonButton v-if="inputMode === 'string'" @click="resetInputStrings" :backgroundColor="fillColor" :color="backgroundColor"
+          >Reset Inputs</CommonButton
+        >
       </div>
     </div>
-
-    <CommonButton @click="generateHash">Generate</CommonButton>
     <div class="canvas-container">
       <canvas id="identiconCanvas" :width="canvasSize" :height="canvasSize"></canvas>
     </div>
@@ -351,7 +415,7 @@ watch([fillColor, backgroundColor, canvasSize, canvasGutters], () => {
         border-color: #dddddd;
         span {
           color: #ffffff;
-          font-weight: 400;
+          // font-weight: 400;
         }
       }
       label {
@@ -368,12 +432,12 @@ watch([fillColor, backgroundColor, canvasSize, canvasGutters], () => {
           }
         }
         .radio-color-fill-box {
-          height: 80px;
-          width: 80px;
+          height: 60px;
+          width: 60px;
         }
         span {
-          font-size: 1rem;
-          color: #dddddd;
+          font-size: 0.875rem;
+          color: #cccccc;
           font-weight: 300;
           text-transform: capitalize;
           text-align: center;
