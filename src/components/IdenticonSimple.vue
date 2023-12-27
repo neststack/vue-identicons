@@ -4,7 +4,7 @@ import CommonButton from '@/components/common/CommonButton.vue'
 
 const CANVAS_SIZE = 960
 const GUTTERS = 80
-const INPUT_STRING = 'Neststack'
+const INPUT_STRING = 'test'
 const ROTATE_HASH = 0
 const COLORS = [
   { name: 'Green-1', color: '#acd88c' },
@@ -53,9 +53,8 @@ const canvasGutters = ref(GUTTERS)
 const backgroundColor = ref('#ffffff')
 const fillColor = ref('#8cbfd8')
 const inputMode = ref('string')
-const inputString = ref('Hello World!')
-const hashString = ref(null)
-const rotateHash = ref(0)
+const inputString = ref(INPUT_STRING)
+const rotateHash = ref(ROTATE_HASH)
 
 // Computed
 const controlsStyle = computed(() => {
@@ -185,11 +184,19 @@ function transpose2DArray(array2D) {
   return array2D[0].map((_, colIndex) => array2D.map((row) => row[colIndex]))
 }
 
+async function drawWithInput() {
+  let binaryHash = await generateHash()
+  binaryHash = rotateString(binaryHash, rotateHash.value)
+  const array = binaryStringTo3x5Array(binaryHash)
+  matrixInput.value = transpose2DArray(array)
+}
+
 function activateMode(mode) {
   inputMode.value = mode
 }
 
 onMounted(() => {
+  drawWithInput()
   draw()
 })
 
@@ -206,11 +213,7 @@ watch(
 watch(
   [inputString, rotateHash],
   async () => {
-    let binaryHash = await generateHash()
-    binaryHash = rotateString(binaryHash, rotateHash.value)
-    hashString.value = binaryHash
-    const array = binaryStringTo3x5Array(binaryHash)
-    matrixInput.value = transpose2DArray(array)
+    drawWithInput()
   },
   { deep: true }
 )
@@ -277,15 +280,15 @@ watch(
             name="canvasSize"
             min="10"
             max="1000"
-            step="1"
+            step="10"
             v-model="canvasSize"
           />
-          <label for="canvasGutters">{{ `Enter a gutter size (1 - ${canvasSize}):` }}</label>
+          <label for="canvasGutters">{{ `Enter a gutter size (0 - ${canvasSize}):` }}</label>
           <input
             type="number"
             id="canvasGutters"
             name="canvasGutters"
-            min="1"
+            min="0"
             max="100"
             step="1"
             v-model="canvasGutters"
