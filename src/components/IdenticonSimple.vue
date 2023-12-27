@@ -4,7 +4,7 @@ import CommonButton from '@/components/common/CommonButton.vue'
 
 const CANVAS_SIZE = 960
 const GUTTERS = 80
-const INPUT_STRING = 'Hello World!'
+const INPUT_STRING = 'Neststack'
 const ROTATE_HASH = 0
 const COLORS = [
   { name: 'Green-1', color: '#acd88c' },
@@ -28,7 +28,7 @@ const COLORS = [
   { name: 'Aqua-2', color: '#8cd8d7' },
   { name: 'Forest-1', color: '#8cd8c3' },
   { name: 'Forest-2', color: '#8cd8aa' },
-  { name: 'Forest-3', color: '#8cd8af' },
+  { name: 'Forest-3', color: '#8cd8af' }
 ]
 const BACKGROUND_COLORS = [
   { name: 'github', color: '#f0f0f0' },
@@ -67,6 +67,21 @@ const controlsStyle = computed(() => {
 
 // Methods
 function draw() {
+  let canvasContainer = document.getElementById('identiconCanvasContainer')
+
+  // Remove existing canvas
+  let existingCanvas = document.getElementById('identiconCanvas')
+  if (existingCanvas) {
+    canvasContainer.removeChild(existingCanvas)
+  }
+
+  // Create a new canvas
+  let canv = document.createElement('canvas')
+  canv.id = 'identiconCanvas'
+  canv.width = canvasSize.value // Set canvas width
+  canv.height = canvasSize.value // Set canvas height
+  canvasContainer.appendChild(canv)
+
   const canvas = document.getElementById('identiconCanvas')
   const ctx = canvas.getContext('2d')
 
@@ -144,33 +159,30 @@ async function generateHash() {
 }
 
 function binaryStringTo3x5Array(binaryString) {
-  console.log('binaryStringTo3x5Array',{binaryString})
   if (binaryString?.length !== 15) {
-    binaryString = binaryString.slice(0,15)
-    // throw new Error('Binary string must be of length 15 (3 rows * 5 columns)');
-    console.log('binaryString length', binaryString?.length)
+    binaryString = binaryString.slice(0, 15)
   }
 
   // Initialize a 3x5 array
-  const array3x5 = [];
+  const array3x5 = []
 
   // Loop through the binary string and split it into rows
   for (let i = 0; i < 3; i++) {
     // Extract a substring for each row (5 characters)
-    const rowString = binaryString.substring(i * 5, (i + 1) * 5);
+    const rowString = binaryString.substring(i * 5, (i + 1) * 5)
 
     // Convert the row string to an array of integers
-    const rowArray = rowString.split('').map(Number);
+    const rowArray = rowString.split('').map(Number)
 
     // Push the row array to the 3x5 array
-    array3x5.push(rowArray);
+    array3x5.push(rowArray)
   }
 
-  return array3x5;
+  return array3x5
 }
 
 function transpose2DArray(array2D) {
-  return array2D[0].map((_, colIndex) => array2D.map(row => row[colIndex]));
+  return array2D[0].map((_, colIndex) => array2D.map((row) => row[colIndex]))
 }
 
 function activateMode(mode) {
@@ -195,15 +207,22 @@ watch(
   [inputString, rotateHash],
   async () => {
     let binaryHash = await generateHash()
-    console.log('Generated***', binaryHash)
     binaryHash = rotateString(binaryHash, rotateHash.value)
-    console.log('Rotated***', binaryHash)
     hashString.value = binaryHash
     const array = binaryStringTo3x5Array(binaryHash)
-    console.log('Array***',{array})
     matrixInput.value = transpose2DArray(array)
   },
   { deep: true }
+)
+
+// Watch canvasSize to change gutterSize
+watch(
+  () => canvasSize,
+  (value) => {
+    if (canvasGutters.value < value) {
+      canvasGutters.value = value % 3
+    }
+  }
 )
 </script>
 
@@ -310,12 +329,16 @@ watch(
             />
           </div>
         </Transition>
-        <CommonButton v-if="inputMode === 'string'" @click="resetInputStrings" :backgroundColor="fillColor" :color="backgroundColor"
+        <CommonButton
+          v-if="inputMode === 'string'"
+          @click="resetInputStrings"
+          :backgroundColor="fillColor"
+          :color="backgroundColor"
           >Reset Inputs</CommonButton
         >
       </div>
     </div>
-    <div class="canvas-container">
+    <div class="canvas-container" id="identiconCanvasContainer">
       <canvas id="identiconCanvas" :width="canvasSize" :height="canvasSize"></canvas>
     </div>
   </div>
