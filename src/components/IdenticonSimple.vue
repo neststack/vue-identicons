@@ -43,11 +43,6 @@ const matrixInput = ref([
   [1, 0, 0],
   [0, 1, 0]
 ])
-const matrix = computed(() => {
-  return matrixInput.value?.map((row) => {
-    return [row[0], row[1], row[2], row[1], row[0]]
-  })
-})
 const canvasSize = ref(CANVAS_SIZE)
 const canvasGutters = ref(GUTTERS)
 const backgroundColor = ref('#ffffff')
@@ -62,6 +57,16 @@ const controlsStyle = computed(() => {
     '--selected-fill-color': fillColor.value,
     '--selected-background-color': backgroundColor.value
   }
+})
+const matrix = computed(() => {
+  return matrixInput.value?.map((row) => {
+    return [row[0], row[1], row[2], row[1], row[0]]
+  })
+})
+const imageName = computed(() => {
+  const fillColorName = COLORS.find((color) => color.color === fillColor.value)?.name
+  const backgroundColorName = BACKGROUND_COLORS.find((color) => color.color === backgroundColor.value)?.name
+  return `identicon_input-${inputString.value}_rotate-${rotateHash.value}_${fillColorName}-${backgroundColorName}_(${canvasSize.value}x${canvasSize.value})`
 })
 
 // Methods
@@ -193,6 +198,43 @@ async function drawWithInput() {
 
 function activateMode(mode) {
   inputMode.value = mode
+}
+
+function downloadCanvas(format) {
+  // Get the canvas element
+  const canvas = document.getElementById('identiconCanvas')
+
+  // Get the data URL of the canvas content
+  const dataURL = canvas.toDataURL(`image/${format}`)
+
+  // Convert the data URL to a Blob
+  const blob = dataURLtoBlob(dataURL)
+
+  // Create a download link
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `${imageName.value}.${format}`
+
+  // Trigger a click event on the link to initiate the download
+  a.click()
+}
+
+function dataURLtoBlob(dataURL) {
+  const parts = dataURL.split(';base64,')
+  const contentType = parts[0].split(':')[1]
+
+  // For JPEG images, set the content type explicitly
+  const fixedContentType = contentType === 'image/jpg' ? 'image/jpeg' : contentType
+
+  const raw = window.atob(parts[1])
+  const rawLength = raw.length
+  const uInt8Array = new Uint8Array(rawLength)
+
+  for (let i = 0; i < rawLength; ++i) {
+    uInt8Array[i] = raw.charCodeAt(i)
+  }
+
+  return new Blob([uInt8Array], { type: fixedContentType })
 }
 
 onMounted(() => {
@@ -341,6 +383,10 @@ watch(
         >
       </div>
     </div>
+    <div class="action-container">
+      <CommonButton @click="downloadCanvas('png')">Download Png</CommonButton>
+      <CommonButton @click="downloadCanvas('jpeg')">Download Jpg</CommonButton>
+    </div>
     <div class="canvas-container" id="identiconCanvasContainer">
       <canvas id="identiconCanvas" :width="canvasSize" :height="canvasSize"></canvas>
     </div>
@@ -356,7 +402,7 @@ watch(
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 2rem;
+  gap: 1rem;
   transition: all ease-in-out 100ms;
   user-select: none;
   .controls-container {
@@ -504,6 +550,11 @@ watch(
       flex-direction: column;
       gap: 0.25rem;
     }
+  }
+  .action-container {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
   }
   .canvas-container {
   }
