@@ -70,7 +70,7 @@ const imageName = computed(() => {
 })
 const allowedGutters = computed(() => {
   if (!canvasSize.value) return 1
-  return Math.floor(canvasSize.value % 2)
+  return Math.floor(canvasSize.value / 2)
 })
 
 // Methods
