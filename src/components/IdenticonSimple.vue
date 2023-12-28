@@ -68,6 +68,10 @@ const imageName = computed(() => {
   const backgroundColorName = BACKGROUND_COLORS.find((color) => color.color === backgroundColor.value)?.name
   return `identicon_input-${inputString.value}_rotate-${rotateHash.value}_${fillColorName}-${backgroundColorName}_(${canvasSize.value}x${canvasSize.value})`
 })
+const allowedGutters = computed(() => {
+  if (!canvasSize.value) return 1
+  return Math.floor(canvasSize.value % 2)
+})
 
 // Methods
 function draw() {
@@ -325,13 +329,13 @@ watch(
             step="10"
             v-model="canvasSize"
           />
-          <label for="canvasGutters">{{ `Enter a gutter size (0 - ${canvasSize}):` }}</label>
+          <label for="canvasGutters">{{ `Enter a gutter size (0 - ${allowedGutters}):` }}</label>
           <input
             type="number"
             id="canvasGutters"
             name="canvasGutters"
             min="0"
-            max="100"
+            :max="allowedGutters"
             step="1"
             v-model="canvasGutters"
           />
