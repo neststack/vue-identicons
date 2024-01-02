@@ -564,7 +564,7 @@ watch(
   .canvas-container {
   }
 }
-@media (max-width: 760px) {
+@media (max-width: 960px) {
   .identicon-container {
     gap: 0.5rem;
     .controls-container {
