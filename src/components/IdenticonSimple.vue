@@ -498,6 +498,7 @@ watch(
         display: flex;
         flex-direction: column;
         justify-content: center;
+        align-items: center;
         padding: 0.25rem;
         border: 4px solid transparent;
         transition: all ease-in-out 100ms;
@@ -561,6 +562,39 @@ watch(
     padding: 1rem;
   }
   .canvas-container {
+  }
+}
+@media (max-width: 760px) {
+  .identicon-container {
+    gap: 0.5rem;
+    .controls-container {
+      border-radius:0.5rem;
+      padding: 0.75rem;
+      gap: 0.75rem;
+      .control-item {
+        padding: 0 0 0 1rem;
+        gap: 0.25rem;
+        h2 {
+          font-size: 1.25rem;
+        }
+      }
+      .color-radio-boxes {
+        gap: 0.25rem;
+        label {
+          width: 58px;
+          .radio-color-fill-box {
+            height: 40px;
+            width: 40px;
+          }
+          span {
+            font-size: 0.675rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        }
+      }
+    }
   }
 }
 </style>
