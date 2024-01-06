@@ -34,7 +34,7 @@ function downloadCanvasAsImage({ imageFormat, fileName, canvasId: canvasId = 'id
   // Create a download link
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
-  a.download = `${fileName.value}.${imageFormat}`
+  a.download = `${fileName}.${imageFormat}`
 
   // Trigger a click event on the link to initiate the download
   a.click()
