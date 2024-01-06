@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, toRefs, watch } from 'vue'
+import { toRefs } from 'vue'
 
 const emit = defineEmits(['changeNumberInputValue', 'changeInputNumberSpinner', 'stopChanging'])
 
@@ -9,23 +9,27 @@ const props = defineProps({
   min: { type: String, default: '' },
   max: { type: String, default: '' },
   step: { type: String, default: '' },
-  value: { type: Number, default: 0 },
+  inputValue: { type: Number, default: 0 }
 })
 
-const goodValue = ref(0)
+const { id, min, max, inputValue } = toRefs(props)
 
-const { id, min, max, value } = toRefs(props)
-
-const handleInputChange = (input) => {
-  console.log('handleInputChange', {input})
-  const numInput = parseInt(input, 10)
+function handleInputChange(event) {
+  const numInput = parseInt(event.target.value, 10)
   const minValue = parseInt(min.value, 10)
   const maxValue = parseInt(max.value, 10)
-  if (minValue <= numInput && numInput <= maxValue) {
-    console.log({minValue, numInput, maxValue})
-    emit('changeNumberInputValue', { id: id.value, value: numInput })
-    goodValue.value = numInput
+  let finalValue
+  if (isNaN(numInput)) {
+    finalValue = inputValue.value
+  } else if (numInput < minValue) {
+    finalValue = minValue
+  } else if (numInput > maxValue) {
+    finalValue = maxValue
+  } else {
+    finalValue = numInput
   }
+  event.target.value = finalValue
+  emit('changeNumberInputValue', { id: id.value, value: finalValue })
 }
 
 const handleMouseDown = (direction) => {
@@ -35,17 +39,6 @@ const handleMouseDown = (direction) => {
 const handleMouseUp = () => {
   emit('stopChanging')
 }
-
-onMounted(() => {
-  goodValue.value = value.value
-})
-
-watch(
-  () => value,
-  (val) => {
-    goodValue.value = val
-  }
-)
 </script>
 
 <template>
@@ -53,18 +46,26 @@ watch(
     <label :for="id">{{ title }}:</label>
     <div class="input-container">
       <input
-      class="input-number"
-      type="number"
-      :id="id"
-      :name="id"
-      :min="min"
-      :max="max"
-      :step="step"
-      :value="goodValue"
-      @input="event => handleInputChange(event.target.value)"
+        class="input-number"
+        type="number"
+        :id="id"
+        :name="id"
+        :min="min"
+        :max="max"
+        :step="step"
+        :value="inputValue"
+        @input="handleInputChange"
       />
-      <button class="up-button" @mousedown="() => handleMouseDown('up')" @mouseup="handleMouseUp">+</button>
-      <button class="down-button" @mousedown="() => handleMouseDown('down')" @mouseup="handleMouseUp">-</button>
+      <button class="up-button" @mousedown="() => handleMouseDown('up')" @mouseup="handleMouseUp">
+        +
+      </button>
+      <button
+        class="down-button"
+        @mousedown="() => handleMouseDown('down')"
+        @mouseup="handleMouseUp"
+      >
+        -
+      </button>
     </div>
   </div>
 </template>
@@ -82,7 +83,7 @@ watch(
     grid-template-columns: auto 1fr auto;
     grid-template-areas: 'down-button input-number up-button';
     grid-template-rows: auto;
-    gap: 0.25rem;
+    gap: 1rem;
     button {
       align-self: center;
       width: 2rem;
@@ -102,6 +103,8 @@ watch(
     .input-number {
       grid-area: input-number;
       align-self: stretch;
+      padding-inline: 0.5rem;
+      text-align: right;
     }
     .up-button {
       grid-area: up-button;
