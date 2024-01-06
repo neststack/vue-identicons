@@ -1,7 +1,23 @@
 <script setup>
 import { computed, ref, onMounted, watch } from 'vue'
+// Components
+// const CommonButton = defineAsyncComponent(() => import('@/components/common/CommonButton.vue'))
+// const SpinnerInput = defineAsyncComponent(() => import('@/components/common/SpinnerInput.vue'))
 import CommonButton from '@/components/common/CommonButton.vue'
+import SpinnerInput from '@/components/common/SpinnerInput.vue'
 
+// Utils
+import {
+  binaryStringTo3x5Array,
+  downloadCanvasAsImage,
+  generateHash,
+  getNumberInputElementDetails,
+  rotateString,
+  sleep,
+  transpose2DArray
+} from '@/utils/helpers'
+
+// constants
 const CANVAS_SIZE = 960
 const GUTTERS = 80
 const INPUT_STRING = 'test'
@@ -36,41 +52,47 @@ const BACKGROUND_COLORS = [
   { name: 'white', color: '#ffffff' }
 ]
 
-const matrixInput = ref([
-  [1, 1, 0],
-  [0, 0, 1],
-  [1, 1, 0],
-  [1, 0, 0],
-  [0, 1, 0]
-])
-const canvasSize = ref(CANVAS_SIZE)
-const canvasGutters = ref(GUTTERS)
-const backgroundColor = ref('#ffffff')
-const fillColor = ref('#8cbfd8')
-const inputMode = ref('string')
-const inputString = ref(INPUT_STRING)
-const rotateHash = ref(ROTATE_HASH)
+const canvasInputs = ref({
+  canvasSize: CANVAS_SIZE,
+  canvasGutters: GUTTERS,
+  backgroundColor: '#ffffff',
+  fillColor: '#8cbfd8',
+  inputMode: 'string',
+  inputString: INPUT_STRING,
+  rotateHash: ROTATE_HASH,
+  matrixInput: [
+    [1, 1, 0],
+    [0, 0, 1],
+    [1, 1, 0],
+    [1, 0, 0],
+    [0, 1, 0]
+  ]
+})
+const binaryHash = ref()
+const spinnerOn = ref(false)
 
 // Computed
 const controlsStyle = computed(() => {
   return {
-    '--selected-fill-color': fillColor.value,
-    '--selected-background-color': backgroundColor.value
+    '--selected-fill-color': canvasInputs.value?.fillColor,
+    '--selected-background-color': canvasInputs.value?.backgroundColor
   }
 })
 const matrix = computed(() => {
-  return matrixInput.value?.map((row) => {
+  return canvasInputs.value?.matrixInput?.map((row) => {
     return [row[0], row[1], row[2], row[1], row[0]]
   })
 })
 const imageName = computed(() => {
-  const fillColorName = COLORS.find((color) => color.color === fillColor.value)?.name
-  const backgroundColorName = BACKGROUND_COLORS.find((color) => color.color === backgroundColor.value)?.name
-  return `identicon_input-${inputString.value}_rotate-${rotateHash.value}_${fillColorName}-${backgroundColorName}_(${canvasSize.value}x${canvasSize.value})`
+  const fillColorName = COLORS.find((color) => color.color === canvasInputs.value?.fillColor)?.name
+  const backgroundColorName = BACKGROUND_COLORS.find(
+    (color) => color.color === canvasInputs.value?.backgroundColor
+  )?.name
+  return `identicon_input-${canvasInputs.value?.inputString}_rotate-${canvasInputs.value?.rotateHash}_${fillColorName}-${backgroundColorName}_(${canvasInputs.value?.canvasSize}x${canvasInputs.value?.canvasSize})`
 })
 const allowedGutters = computed(() => {
-  if (!canvasSize.value) return 1
-  return Math.floor(canvasSize.value / 2)
+  if (!canvasInputs.value?.canvasSize) return 1
+  return Math.floor(canvasInputs.value?.canvasSize / 4)
 })
 
 // Methods
@@ -86,19 +108,19 @@ function draw() {
   // Create a new canvas
   let canv = document.createElement('canvas')
   canv.id = 'identiconCanvas'
-  canv.width = canvasSize.value // Set canvas width
-  canv.height = canvasSize.value // Set canvas height
+  canv.width = canvasInputs.value?.canvasSize // Set canvas width
+  canv.height = canvasInputs.value?.canvasSize // Set canvas height
   canvasContainer.appendChild(canv)
 
   const canvas = document.getElementById('identiconCanvas')
   const ctx = canvas.getContext('2d')
 
-  const boxWidth = (canvasSize.value - canvasGutters.value * 2) / 5
-  const gutter = canvasGutters.value
-  const full = canvasSize.value
+  const boxWidth = (canvasInputs.value?.canvasSize - canvasInputs.value?.canvasGutters * 2) / 5
+  const gutter = canvasInputs.value?.canvasGutters
+  const full = canvasInputs.value?.canvasSize
 
   // Background Fill
-  ctx.fillStyle = backgroundColor.value
+  ctx.fillStyle = canvasInputs.value?.backgroundColor
   ctx.fillRect(0, 0, full, full)
 
   // Tiles Fill
@@ -107,7 +129,7 @@ function draw() {
       if (matrix.value[i][j] === 1) {
         const x = j * boxWidth + gutter
         const y = i * boxWidth + gutter
-        ctx.fillStyle = fillColor.value
+        ctx.fillStyle = canvasInputs.value?.fillColor
         ctx.fillRect(x, y, boxWidth, boxWidth)
       }
     }
@@ -115,161 +137,147 @@ function draw() {
 }
 
 function handleCheckboxChange(i, j) {
-  matrixInput.value[i][j] = matrixInput.value[i][j] ? 0 : 1
+  canvasInputs.value.matrixInput[i][j] = canvasInputs.value?.matrixInput[i][j] ? 0 : 1
 }
 
 function resetCanvasSize() {
-  canvasSize.value = CANVAS_SIZE
-  canvasGutters.value = GUTTERS
+  canvasInputs.value.canvasSize = CANVAS_SIZE
+  canvasInputs.value.canvasGutters = GUTTERS
 }
 
 function resetInputStrings() {
-  inputString.value = INPUT_STRING
-  rotateHash.value = ROTATE_HASH
+  canvasInputs.value.inputString = INPUT_STRING
+  canvasInputs.value.rotateHash = ROTATE_HASH
 }
 
-function rotateString(inputString, positions) {
-  // Ensure positions is a positive integer
-  positions = positions % inputString?.length
-  if (positions < 0) {
-    positions += inputString.length
-  }
-
-  // Rotate the string using substring concatenation
-  const rotatedString = inputString.substring(positions) + inputString.substring(0, positions)
-
-  return rotatedString
+function downloadCanvas(imageFormat) {
+  downloadCanvasAsImage({
+    imageFormat,
+    fileName: imageName.value,
+    canvasId: 'identiconCanvas'
+  })
 }
 
-async function generateHash() {
-  async function sha256(message) {
-    // Convert the string to Uint8Array
-    const encoder = new TextEncoder()
-    const data = encoder.encode(message)
-
-    // Hash the data using SHA-256
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-
-    // Convert the hash to a hexadecimal string
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    const hashHex = hashArray.map((byte) => byte.toString(2).padStart(2, '0')).join('')
-
-    return hashHex
-  }
-
-  // Example usage:
-  try {
-    const hash = await sha256(inputString.value)
-    return hash
-  } catch (error) {
-    console.error(error)
-  }
+async function generateBinaryHash(input) {
+  return await generateHash(input)
 }
 
-function binaryStringTo3x5Array(binaryString) {
-  if (binaryString?.length !== 15) {
-    binaryString = binaryString.slice(0, 15)
-  }
-
-  // Initialize a 3x5 array
-  const array3x5 = []
-
-  // Loop through the binary string and split it into rows
-  for (let i = 0; i < 3; i++) {
-    // Extract a substring for each row (5 characters)
-    const rowString = binaryString.substring(i * 5, (i + 1) * 5)
-
-    // Convert the row string to an array of integers
-    const rowArray = rowString.split('').map(Number)
-
-    // Push the row array to the 3x5 array
-    array3x5.push(rowArray)
-  }
-
-  return array3x5
-}
-
-function transpose2DArray(array2D) {
-  return array2D[0].map((_, colIndex) => array2D.map((row) => row[colIndex]))
-}
-
-async function drawWithInput() {
-  let binaryHash = await generateHash()
-  binaryHash = rotateString(binaryHash, rotateHash.value)
-  const array = binaryStringTo3x5Array(binaryHash)
-  matrixInput.value = transpose2DArray(array)
+async function drawWithInput({ binaryHash, rotate }) {
+  const rotatedHash = rotateString(binaryHash, rotate)
+  const array = binaryStringTo3x5Array(rotatedHash)
+  canvasInputs.value.matrixInput = transpose2DArray(array)
 }
 
 function activateMode(mode) {
-  inputMode.value = mode
+  canvasInputs.value.inputMode = mode
 }
 
-function downloadCanvas(format) {
-  // Get the canvas element
-  const canvas = document.getElementById('identiconCanvas')
-
-  // Get the data URL of the canvas content
-  const dataURL = canvas.toDataURL(`image/${format}`)
-
-  // Convert the data URL to a Blob
-  const blob = dataURLtoBlob(dataURL)
-
-  // Create a download link
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `${imageName.value}.${format}`
-
-  // Trigger a click event on the link to initiate the download
-  a.click()
+// Input Spinners
+function handleInputNumberValue({ id, value }) {
+  canvasInputs.value[id] = value
 }
 
-function dataURLtoBlob(dataURL) {
-  const parts = dataURL.split(';base64,')
-  const contentType = parts[0].split(':')[1]
+async function handleInputNumberSpinner({ id, direction = 'up' }) {
+  spinnerOn.value = true
+  console.warn('handleInputNumberSpinner', { id, direction })
+  const { currentValue, min, max, step } = getNumberInputElementDetails(id)
 
-  // For JPEG images, set the content type explicitly
-  const fixedContentType = contentType === 'image/jpg' ? 'image/jpeg' : contentType
-
-  const raw = window.atob(parts[1])
-  const rawLength = raw.length
-  const uInt8Array = new Uint8Array(rawLength)
-
-  for (let i = 0; i < rawLength; ++i) {
-    uInt8Array[i] = raw.charCodeAt(i)
+  if (direction === 'up') {
+    increaseValue({
+      id,
+      currentValue,
+      max,
+      step
+    })
+  } else {
+    decreaseValue({
+      id,
+      currentValue,
+      min,
+      step
+    })
   }
 
-  return new Blob([uInt8Array], { type: fixedContentType })
+  // sleep
+  await sleep(400)
+  if (direction === 'up') {
+    while (spinnerOn.value) {
+      await sleep(100)
+      increaseValue({
+        id,
+        currentValue,
+        max,
+        step
+      })
+    }
+  } else {
+    while (spinnerOn.value) {
+      await sleep(100)
+      decreaseValue({
+        id,
+        currentValue,
+        min,
+        step
+      })
+    }
+  }
 }
 
-onMounted(() => {
-  drawWithInput()
+function stopChanging() {
+  console.error('stopChanging')
+  spinnerOn.value = false
+}
+
+function increaseValue({ id, max, step }) {
+  const currentValue = canvasInputs.value[id]
+  if (!isNaN(currentValue) && currentValue < max) {
+    canvasInputs.value[id] = currentValue + step
+  }
+}
+
+function decreaseValue({ id, min, step }) {
+  const currentValue = canvasInputs.value[id]
+  if (!isNaN(currentValue) && currentValue > min) {
+    canvasInputs.value[id] = currentValue - step
+  }
+}
+
+onMounted(async () => {
+  binaryHash.value = await generateBinaryHash(INPUT_STRING)
+  drawWithInput({ binaryHash: binaryHash.value, rotate: ROTATE_HASH })
   draw()
 })
 
 // Watch multiple values and trigger the same action
 watch(
-  [fillColor, backgroundColor, canvasSize, canvasGutters, matrixInput],
+  () => canvasInputs,
   () => {
     draw()
   },
   { deep: true }
 )
 
-// Watch multiple values and trigger the same action
+// Watch inputString hash generation
 watch(
-  [inputString, rotateHash],
-  async () => {
-    drawWithInput()
-  },
-  { deep: true }
+  () => canvasInputs.value.inputString,
+  async (input) => {
+    binaryHash.value = await generateBinaryHash(input)
+  }
+)
+// rotateHash to trigger hash rotation
+watch(
+  () => [binaryHash.value, canvasInputs.value.rotateHash],
+  (val) => {
+    drawWithInput({ binaryHash: val[0], rotate: val[1] })
+  }
 )
 
 // Watch canvasSize to change gutterSize
 watch(
-  () => canvasSize,
-  (value) => {
-    if (canvasGutters.value < value) {
-      canvasGutters.value = value % 3
+  () => canvasInputs.value.canvasSize,
+  () => {
+    if (canvasInputs.value?.canvasGutters > allowedGutters.value) {
+      canvasInputs.value.canvasGutters = allowedGutters.value
     }
   }
 )
@@ -287,7 +295,7 @@ watch(
               v-bind:id="item.color"
               v-bind:name="item.name"
               v-bind:value="item.color"
-              v-model="fillColor"
+              v-model="canvasInputs.fillColor"
             />
             <label v-bind:for="item.color">
               <div class="radio-color-fill-box" :style="{ backgroundColor: item.color }"></div>
@@ -306,7 +314,7 @@ watch(
               v-bind:id="item.color"
               v-bind:name="item.name"
               v-bind:value="item.color"
-              v-model="backgroundColor"
+              v-model="canvasInputs.backgroundColor"
             />
             <label v-bind:for="item.color">
               <div class="radio-color-fill-box" :style="{ backgroundColor: item.color }"></div>
@@ -319,70 +327,89 @@ watch(
       <div class="control-item" id="sizeInputs">
         <h2>Canvas Size</h2>
         <div class="size-inputs">
-          <label for="canvasSize">Enter a Canvas size:</label>
-          <input
-            type="number"
+          <SpinnerInput
+            title="Enter a Canvas Size"
             id="canvasSize"
-            name="canvasSize"
             min="10"
             max="1000"
             step="10"
-            v-model="canvasSize"
+            :value="canvasInputs.canvasSize"
+            @stopChanging="stopChanging"
+            @changeNumberInputValue="handleInputNumberValue"
+            @changeInputNumberSpinner="handleInputNumberSpinner"
           />
-          <label for="canvasGutters">{{ `Enter a gutter size (0 - ${allowedGutters}):` }}</label>
-          <input
-            type="number"
+          <SpinnerInput
+            :title="`Enter a gutter size (0 - ${allowedGutters})`"
             id="canvasGutters"
-            name="canvasGutters"
-            min="0"
-            :max="allowedGutters"
+            min="10"
+            :max="allowedGutters.toString()"
             step="1"
-            v-model="canvasGutters"
+            :value="canvasInputs.canvasGutters"
+            @stopChanging="stopChanging"
+            @changeNumberInputValue="handleInputNumberValue"
+            @changeInputNumberSpinner="handleInputNumberSpinner"
           />
         </div>
-        <CommonButton @click="resetCanvasSize" :backgroundColor="fillColor" :color="backgroundColor"
+        <CommonButton
+          @click="resetCanvasSize"
+          :backgroundColor="canvasInputs.fillColor"
+          :color="canvasInputs.backgroundColor"
           >Reset</CommonButton
         >
       </div>
       <div class="control-item" id="checkboxMatrix">
         <h2 class="pattern-method-header">
-          <span @click="activateMode('string')" :class="{ active: inputMode === 'string' }"
+          <span
+            @click="activateMode('string')"
+            :class="{ active: canvasInputs.inputMode === 'string' }"
             >Input String</span
           >
-          <span @click="activateMode('pattern')" :class="{ active: inputMode === 'pattern' }"
+          <span
+            @click="activateMode('pattern')"
+            :class="{ active: canvasInputs.inputMode === 'pattern' }"
             >Pattern</span
           >
         </h2>
-        <Transition v-if="inputMode === 'pattern'" appear name="fade">
+        <Transition v-if="canvasInputs.inputMode === 'pattern'" appear name="fade">
           <div class="checkbox-matrix-inputs">
-            <div v-for="(row, i) in matrixInput" :key="i" class="checkbox-matrix-input">
+            <div
+              v-for="(row, i) in canvasInputs.matrixInput"
+              :key="i"
+              class="checkbox-matrix-input"
+            >
               <div v-for="(item, j) in row" :key="j" class="checkbox-input-row">
                 <input type="checkbox" :checked="item" @change="handleCheckboxChange(i, j)" />
               </div>
             </div>
           </div>
         </Transition>
-        <Transition v-if="inputMode === 'string'" appear name="fade">
+        <Transition v-if="canvasInputs.inputMode === 'string'" appear name="fade">
           <div class="size-inputs">
             <label for="inputString">Input String:</label>
-            <input type="string" id="inputString" name="inputString" v-model="inputString" />
-            <label for="rotateHash">{{ `Rotate hexBinary (enter number):` }}</label>
             <input
-              type="number"
+              type="string"
+              id="inputString"
+              name="inputString"
+              v-model="canvasInputs.inputString"
+            />
+            <SpinnerInput
+              title="Rotate hexBinary (enter number)"
               id="rotateHash"
-              name="rotateHash"
               min="0"
               max="100"
               step="1"
-              v-model="rotateHash"
+              :value="canvasInputs.rotateHash"
+              @stopChanging="stopChanging"
+              @changeNumberInputValue="handleInputNumberValue"
+              @changeInputNumberSpinner="handleInputNumberSpinner"
             />
           </div>
         </Transition>
         <CommonButton
-          v-if="inputMode === 'string'"
+          v-if="canvasInputs.inputMode === 'string'"
           @click="resetInputStrings"
-          :backgroundColor="fillColor"
-          :color="backgroundColor"
+          :backgroundColor="canvasInputs.fillColor"
+          :color="canvasInputs.backgroundColor"
           >Reset Inputs</CommonButton
         >
       </div>
@@ -392,7 +419,11 @@ watch(
       <CommonButton @click="downloadCanvas('jpeg')">Download Jpg</CommonButton>
     </div>
     <div class="canvas-container" id="identiconCanvasContainer">
-      <canvas id="identiconCanvas" :width="canvasSize" :height="canvasSize"></canvas>
+      <canvas
+        id="identiconCanvas"
+        :width="canvasInputs.canvasSize"
+        :height="canvasInputs.canvasSize"
+      ></canvas>
     </div>
   </div>
 </template>
@@ -498,7 +529,6 @@ watch(
         display: flex;
         flex-direction: column;
         justify-content: center;
-        align-items: center;
         padding: 0.25rem;
         border: 4px solid transparent;
         transition: all ease-in-out 100ms;
@@ -553,7 +583,8 @@ watch(
     .size-inputs {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.5rem;
+      margin-bottom: 0.375rem;
     }
   }
   .action-container {
@@ -562,39 +593,6 @@ watch(
     padding: 1rem;
   }
   .canvas-container {
-  }
-}
-@media (max-width: 960px) {
-  .identicon-container {
-    gap: 0.5rem;
-    .controls-container {
-      border-radius:0.5rem;
-      padding: 0.75rem;
-      gap: 0.75rem;
-      .control-item {
-        padding: 0 0 0 1rem;
-        gap: 0.25rem;
-        h2 {
-          font-size: 1.25rem;
-        }
-      }
-      .color-radio-boxes {
-        gap: 0.25rem;
-        label {
-          width: 58px;
-          .radio-color-fill-box {
-            height: 40px;
-            width: 40px;
-          }
-          span {
-            font-size: 0.675rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-        }
-      }
-    }
   }
 }
 </style>
