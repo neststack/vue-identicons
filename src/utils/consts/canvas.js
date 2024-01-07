@@ -1,6 +1,6 @@
 // canvas constants
-export const CANVAS_SIZE = 960
-export const GUTTERS = 80
+export const CANVAS_SIZE = 480
+export const GUTTERS = 40
 export const INPUT_STRING = 'test'
 export const INPUT_MODE = 'string'
 export const ROTATE_HASH = 0

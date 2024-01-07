@@ -56,13 +56,13 @@ const handleMouseUp = () => {
         :value="inputValue"
         @input="handleInputChange"
       />
-      <button class="up-button" @mousedown="() => handleMouseDown('up')" @mouseup="handleMouseUp">
+      <button class="up-button" @pointerdown="() => handleMouseDown('up')" @pointerup="handleMouseUp">
         +
       </button>
       <button
         class="down-button"
-        @mousedown="() => handleMouseDown('down')"
-        @mouseup="handleMouseUp"
+        @pointerdown="() => handleMouseDown('down')"
+        @pointerup="handleMouseUp"
       >
         -
       </button>
@@ -108,9 +108,11 @@ const handleMouseUp = () => {
     }
     .up-button {
       grid-area: up-button;
+      align-self: stretch;
     }
     .down-button {
       grid-area: down-button;
+      align-self: stretch;
     }
 
     // Hide Html spinners

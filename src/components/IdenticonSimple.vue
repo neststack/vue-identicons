@@ -1,5 +1,5 @@
 <script setup>
-import { defineAsyncComponent } from 'vue';
+import { defineAsyncComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 // Composables
 import { useCanvas } from '@/composables/useCanvas'
@@ -93,7 +93,7 @@ const { controlsStyle, allowedGutters, downloadCanvas, initCanvasInputs } = useC
             id="canvasGutters"
             min="0"
             :max="allowedGutters.toString()"
-            step="1"
+            step="2"
             :inputValue="canvasInputs.canvasGutters"
             @stopChanging="stopChanging"
             @changeNumberInputValue="handleInputNumberValue"
@@ -128,7 +128,7 @@ const { controlsStyle, allowedGutters, downloadCanvas, initCanvasInputs } = useC
               class="checkbox-matrix-input"
             >
               <div v-for="(item, j) in row" :key="j" class="checkbox-input-row">
-                <input type="checkbox" :checked="item" @change="handleCheckboxChange(i, j)" />
+                <input :id="`pattern-checkbox-${i}-${j}`" name="pattern-checkbox" type="checkbox" :checked="item" @change="handleCheckboxChange(i, j)" />
               </div>
             </div>
           </div>
@@ -157,10 +157,12 @@ const { controlsStyle, allowedGutters, downloadCanvas, initCanvasInputs } = useC
         </Transition>
         <CommonButton
           v-if="canvasInputs.inputMode === 'string'"
-          @click="() => {
-            resetInputStrings()
-            initCanvasInputs()
-          }"
+          @click="
+            () => {
+              resetInputStrings()
+              initCanvasInputs()
+            }
+          "
           :backgroundColor="canvasInputs.fillColor"
           :color="canvasInputs.backgroundColor"
           >Reset Inputs</CommonButton
@@ -171,12 +173,14 @@ const { controlsStyle, allowedGutters, downloadCanvas, initCanvasInputs } = useC
       <CommonButton @click="downloadCanvas('png')">Download Png</CommonButton>
       <CommonButton @click="downloadCanvas('jpeg')">Download Jpg</CommonButton>
     </div>
-    <div class="canvas-container" id="identiconCanvasContainer">
-      <canvas
-        id="identiconCanvas"
-        :width="canvasInputs.canvasSize"
-        :height="canvasInputs.canvasSize"
-      ></canvas>
+    <div class="canvas-container">
+      <div class="canvas" id="identiconCanvasContainer">
+        <canvas
+          id="identiconCanvas"
+          :width="canvasInputs.canvasSize"
+          :height="canvasInputs.canvasSize"
+        ></canvas>
+      </div>
     </div>
   </div>
 </template>
@@ -337,7 +341,7 @@ const { controlsStyle, allowedGutters, downloadCanvas, initCanvasInputs } = useC
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      margin-bottom: 0.375rem;
+      margin-bottom: 1rem;
     }
   }
   .action-container {
@@ -346,6 +350,16 @@ const { controlsStyle, allowedGutters, downloadCanvas, initCanvasInputs } = useC
     padding: 1rem;
   }
   .canvas-container {
+    position: relative;
+    width: 100%;
+    height: 1020px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-x: auto;
+    .canvas {
+      position: absolute;
+    }
   }
 }
 </style>
